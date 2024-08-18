@@ -1,46 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mappte</title>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mappte</title>
-  <style>
-    :root{
+    <style>
+      :root {
         color-scheme: light dark;
-    }
-    body {
-      font-family:
-        Oxygen,
-        Ubuntu,
-        Cantarell,
-        'Open Sans',
-        'Helvetica Neue',
-        sans-serif;
-      display: grid;
-      place-content: center;
-      height: 100vh;
-      padding: 36px;
-      grid-template-rows: 1fr;
-    }
+      }
+      body {
+        font-family: Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+          sans-serif;
+        display: grid;
+        place-content: center;
+        height: 92vh;
+        padding: 36px;
+        grid-template-rows: 1fr;
+      }
 
-    #chat {
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      width: 350px;
-      height: 100%;
-      position: relative
-    }
-  </style>
-</head>
+      #chat {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        width: 350px;
+        height: 100%;
+        position: relative;
+      }
+      #form {
+        bottom: 0px;
+        height: 48px;
+        display: flex;
+        position: absolute;
+        padding: 4px;
+        right: 0;
+      }
+      #input {
+        border: none;
+        border-radius: 40px;
+        padding: 8px;
+        width: 100%;
+      }
+      button {
+        background-color: #007bff;
+        border: none;
+        border-radius: 40px;
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+        margin-left: 8px;
+        padding: 8px 16px;
+      }
+      #input:focus {
+        outline: none;
+      }
+      #messages {
+        list-style-type: none;
+        margin: 0;
+        padding: 8px;
+        overflow-y: auto;
+        height: calc(100% - 48px);
+        color: white;
+      }
+      #messages > li:nth-child(odd) {
+        background-color: #000;
+        border-radius: 4px;
+        margin-bottom: 8px;
+        padding: 8px;
+      }
+      li {
+        background-color: #007bff;
+        border-radius: 4px;
+        margin-bottom: 8px;
+        padding: 8px;
+      }
+    </style>
+  </head>
 
-<body>
-  <section id="chat">
-    <form action="" id="form">
-        <input type="text" name="message" id="input" placeholder="Escribi un mensaje" autocomplete="off"/>
+  <body>
+    <section id="chat">
+      <ul id="messages"></ul>
+      <form action="" id="form">
+        <input
+          type="text"
+          name="message"
+          id="input"
+          placeholder="Escribi un mensaje"
+          autocomplete="off"
+        />
         <button type="submit">Enviar</button>
-    </form>
-  </section>
-</body>
-
+      </form>
+    </section>
+  </body>
 </html>
+<script type="module">
+  import { io } from "https://cdn.socket.io/4.7.5/socket.io.esm.min.js";
+  const socket = io();
+  const form = document.getElementById("form");
+  const input = document.getElementById("input");
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (input.value) {
+      socket.emit("chat", input.value);
+      input.value = "";
+    }
+  });
+  const messages = document.getElementById("messages");
+  socket.on("chat", (msg) => {
+    const item = document.createElement("li");
+    item.innerText = msg;
+    messages.appendChild(item);
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+
+  socket.on("conversacionesPrevias", (conversaciones) => {
+    console.log(conversaciones);
+    if (conversaciones == {}) {
+      console.log("No hay conversaciones previas");
+    } else {
+      conversaciones.forEach((conversacion) => {
+        console.log(conversacion);
+      });
+    }
+  });
+</script>
