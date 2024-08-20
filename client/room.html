@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mappte</title>
+
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        font-family: Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+          sans-serif;
+        display: grid;
+        place-content: center;
+        height: 92vh;
+        padding: 36px;
+        grid-template-rows: 1fr;
+      }
+
+      #chat {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        width: 350px;
+        height: 100%;
+        position: relative;
+      }
+      #form {
+        bottom: 0px;
+        height: 48px;
+        display: flex;
+        position: absolute;
+        padding: 4px;
+        right: 0;
+      }
+      #input {
+        border: none;
+        border-radius: 40px;
+        padding: 8px;
+        width: 100%;
+      }
+      button {
+        background-color: #007bff;
+        border: none;
+        border-radius: 40px;
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+        margin-left: 8px;
+        padding: 8px 16px;
+      }
+      #input:focus {
+        outline: none;
+      }
+      #messages {
+        list-style-type: none;
+        margin: 0;
+        padding: 8px;
+        overflow-y: auto;
+        height: calc(100% - 48px);
+        color: white;
+      }
+      #messages > li:nth-child(odd) {
+        background-color: #000;
+        border-radius: 4px;
+        margin-bottom: 8px;
+        padding: 8px;
+      }
+      li {
+        background-color: #007bff;
+        border-radius: 4px;
+        margin-bottom: 8px;
+        padding: 8px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <section id="chat">
+      <h1>Room:# <b id="roomID"></b></h1>
+      <ul id="messages"></ul>
+      <form action="" id="form">
+        <input
+          type="text"
+          name="message"
+          id="input"
+          placeholder="Escribi un mensaje"
+          autocomplete="off"
+        />
+        <button type="submit">Enviar</button>
+        <input type="hidden" id="sender" name="sender" value="" />
+      </form>
+    </section>
+  </body>
+</html>
+<script type="module">
+  import { io } from "https://cdn.socket.io/4.7.5/socket.io.esm.min.js";
+  const socket = io();
+  const form = document.getElementById("form");
+  const input = document.getElementById("input");
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (input.value) {
+      let data = {
+        msg: input.value,
+        roomID: document.getElementById("roomID").textContent,
+        sender: document.getElementById("sender").value,
+      };
+      socket.emit("chat", data);
+      input.value = "";
+    }
+  });
+  const messages = document.getElementById("messages");
+  socket.on("chat", (msg) => {
+    const item = document.createElement("li");
+    item.innerText = msg.msg;
+    messages.appendChild(item);
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+
+  //   socket.on("conversacionesPrevias", (conversaciones) => {
+  //     console.log(conversaciones);
+  //     if (conversaciones == {}) {
+  //       console.log("No hay conversaciones previas");
+  //     } else {
+  //       conversaciones.forEach((conversacion) => {
+  //         console.log(conversacion);
+  //       });
+  //     }
+  //   });
+</script>
+<script>
+  //esperar a que el documento este cargado
+  document.addEventListener("DOMContentLoaded", function () {
+    // Obtener el número de sala desde la URL
+    const roomNumber = window.location.pathname.split("/").pop();
+
+    // Hacer la solicitud al backend para obtener los datos de la sala
+    fetch(`/getRoom/${roomNumber}`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.room) {
+          console.log("Room Data:", data); // Aquí puedes manipular los datos y mostrarlos en la página
+          document.getElementById("roomID").textContent = `${data.room}`;
+          document.getElementById("sender").value = data.sender;
+          console.log("roomid", roomID);
+          // Lógica adicional para mostrar mensajes, participantes, etc.
+        } else {
+          console.log("Room not found");
+        }
+      })
+      .catch((error) => console.error("Error:", error));
+  });
+</script>

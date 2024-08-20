@@ -1,4 +1,9 @@
 
+// importar los estilos de Bootstrap
+import 'bootstrap/dist/css/bootstrap.min.css'; // Para los estilos CSS de Bootstrap
+// importar los scripts de Bootstrap
+import 'bootstrap/dist/js/bootstrap.bundle.min'; // Para los scripts de Bootstrap
+
 import express from 'express'
 import http from 'http'
 // import socketIo from 'socket.io'
@@ -11,6 +16,11 @@ const io = new socketIo(server, {
     origin: "*",  // Permite todas las conexiones, ajusta según tus necesidades
   }
 });
+
+// Configuración de bootstrap
+// Servir archivos estáticos desde node_modules
+// app.use('/bootstrap', express.static(process.cwd() + '/node_modules/bootstrap/dist'));
+
 
 io.on('connection', (socket) => {
   console.log('Nuevo cliente conectado');
