@@ -7,7 +7,8 @@ import { createServer } from "node:http";
 import ioLogic from "./ioLogic.js";
 //importar db
 import { connectDB } from "../config/database.js";
-
+//importar cors
+import cors from "cors";
 //conectar a la base de datos
 connectDB();
 
@@ -20,6 +21,13 @@ const port = process.env.PORT || 3000;
 const app = express();
 const server = createServer(app);
 ioLogic(server);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                          CONFIGURACIONES                                       */
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//configuración de cors
+app.use(cors());
 
 // Configuración de Bootstrap
 app.use(
@@ -54,43 +62,20 @@ app.use(express.urlencoded({ extended: true }));
 // Middleware para manejar datos JSON (si necesitas)
 app.use(express.json());
 
-//ROUTES
 // Log all requests to the console with morgan
 app.use(morgan("dev"));
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                          ROUTES                                                */
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                          GETTER                                                */
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Serve static files from the 'public' folder
 app.get("/", (req, res) => {
   res.sendFile(process.cwd() + "/client/createRoom.html");
-});
-//generate room and redirect to it
-app.post("/createRoom", async (req, res) => {
-  //generate room
-  const room = new Room();
-  //random number between 1000 to 9999
-  let number = Math.floor(Math.random() * 9000 + 1000);
-  //check if the number is already in use
-  while (await Room.findOne({ number: number })) {
-    number = Math.floor(Math.random() * 9000 + 1000);
-  }
-  room.number = number;
-  //get username and find it, if they aren't exist create user
-  let username = req.body.username;
-  console.log("query", req.body);
-  let user = await User.findOne({ username: username });
-  //if user doesn't exist create it
-  if (!user || user === null) {
-    user = new User({ username: username });
-    await user.save();
-  }
-  //save the owner of the room
-  room.owner = user._id;
-  //new conversation for the room
-  let conversation = new Conversation();
-  conversation.participants.push(user._id);
-  await conversation.save();
-  room.conversation = conversation._id;
-  await room.save();
-
-  res.redirect("/room/" + room.number);
 });
 
 //redirect to room
@@ -125,6 +110,53 @@ app.get("/getRoom/:room", async (req, res) => {
     res.status(404).send("Room not found");
   }
 });
+
+//get data test
+app.get("/api/data", (req, res) => {
+  let number = Math.floor(Math.random() * 9000 + 1000);
+  res.json({ message: "FUNCIONO IUPII 😭😭: conectado a Node.js!", number: number });
+});
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                          POST                                                  */
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//generate room and redirect to it
+app.post("/createRoom", async (req, res) => {
+  //generate room
+  const room = new Room();
+  //random number between 1000 to 9999
+  let number = Math.floor(Math.random() * 9000 + 1000);
+  //check if the number is already in use
+  while (await Room.findOne({ number: number })) {
+    number = Math.floor(Math.random() * 9000 + 1000);
+  }
+  room.number = number;
+  //get username and find it, if they aren't exist create user
+  let username = req.body.username;
+  console.log("query", req.body);
+  let user = await User.findOne({ username: username });
+  //if user doesn't exist create it
+  if (!user || user === null) {
+    user = new User({ username: username });
+    await user.save();
+  }
+  //save the owner of the room
+  room.owner = user._id;
+  //new conversation for the room
+  let conversation = new Conversation();
+  conversation.participants.push(user._id);
+  await conversation.save();
+  room.conversation = conversation._id;
+  await room.save();
+
+  res.redirect("/room/" + room.number);
+});
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                          START ENGINE                                          */
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Start the server
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
