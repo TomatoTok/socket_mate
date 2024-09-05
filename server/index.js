@@ -1,3 +1,6 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                          IMPORTS                                              */
+////////////////////////////////////////////////////////////////////////////////////////////////////
 import express from "express";
 import morgan from "morgan";
 //importar socket
@@ -9,6 +12,7 @@ import ioLogic from "./ioLogic.js";
 import { connectDB } from "../config/database.js";
 //importar cors
 import cors from "cors";
+
 //conectar a la base de datos
 connectDB();
 
@@ -16,6 +20,15 @@ connectDB();
 import User from "../models/user.js";
 import Conversation from "../models/conversation.js";
 import Room from "../models/room.js";
+
+//imports
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { stat } from "node:fs";
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                          DECLARACIONES                                        */
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -66,11 +79,30 @@ app.use(express.json());
 app.use(morgan("dev"));
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                          #MIDDLEWARES                                          */
+////////////////////////////////////////////////////////////////////////////////////////////////////
+const authMiddleware = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).send("Acceso denegado");
+  }
+  try {
+    const decoded = jwt.verify(token, "your_jwt_secret");
+    req.userId = decoded.userId;
+    next();
+  } catch (error) {
+    res.status(401).send("Token inválido");
+  }
+};
+//exportacion de middleware
+export default authMiddleware;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 /*                                          ROUTES                                                */
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-/*                                          GETTER                                                */
+/*                                          #GETTER                                               */
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Serve static files from the 'public' folder
@@ -114,11 +146,14 @@ app.get("/getRoom/:room", async (req, res) => {
 //get data test
 app.get("/api/data", (req, res) => {
   let number = Math.floor(Math.random() * 9000 + 1000);
-  res.json({ message: "FUNCIONO IUPII 😭😭: conectado a Node.js!", number: number });
+  res.json({
+    message: "FUNCIONO IUPII 😭😭: conectado a Node.js!",
+    number: number,
+  });
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-/*                                          POST                                                  */
+/*                                          #POST                                                 */
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //generate room and redirect to it
@@ -154,10 +189,54 @@ app.post("/createRoom", async (req, res) => {
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-/*                                          START ENGINE                                          */
+/*                                          #START ENGINE                                         */
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Start the server
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
+});
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                          #USER                                                */
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//register user
+app.post("/api/register", async (req, res) => {
+  const data = req.body;
+  let username = data.username;
+  let email = data.email;
+  let password = data.password;
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const user = new User({ username, email, password: hashedPassword });
+  await user.save();
+  let userResponse = {
+    username: user.username,
+    email: user.email,
+  };
+  res
+    .status(201)
+    .json({ data: userResponse, message: "Usuario creado", status: 201 });
+});
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*                                          #LOGIN                                                */
+////////////////////////////////////////////////////////////////////////////////////////////////////
+app.post("/api/login", async (req, res) => {
+  const { username, password } = req.body;
+  const user = await User.findOne({ username });
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return res.json({
+      message: "Credenciales inválidas",
+      status: 401,
+      data: { login: false },
+    });
+  }
+  const token = jwt.sign({ userId: user._id }, "your_jwt_secret");
+  return res.json({
+    message: "Credenciales Validas",
+    status: 200,
+    result: { login: true, user: user },
+    token: token,
+  });
 });
